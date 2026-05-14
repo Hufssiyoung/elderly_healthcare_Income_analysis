@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>머신러닝 강의 프로젝트 — 고령 취약계층 헬스케어 수요 예측 (수정본)</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+    background: #0f1117;
+    color: #e2e8f0;
+    padding: 24px;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  h1.main-title {
+    font-size: 18px; font-weight: 700; color: #f8fafc;
+    background: linear-gradient(135deg, #1e3a5f, #1a4731);
+    padding: 18px 24px; border-radius: 10px;
+    border-left: 5px solid #3b82f6;
+    margin-bottom: 8px;
+  }
+  h1.main-title span { font-size: 13px; font-weight: 400; color: #94a3b8; display:block; margin-top:6px; }
+  .change-badge {
+    background: #7c3aed; color: white; font-size: 10px;
+    padding: 1px 7px; border-radius: 4px; margin-left: 6px; vertical-align: middle;
+  }
+  .new-badge {
+    background: #059669; color: white; font-size: 10px;
+    padding: 1px 7px; border-radius: 4px; margin-left: 6px; vertical-align: middle;
+  }
+  .removed-badge {
+    background: #dc2626; color: white; font-size: 10px;
+    padding: 1px 7px; border-radius: 4px; margin-left: 6px; vertical-align: middle;
+  }
+  .pipeline {
+    display: flex; flex-direction: column; gap: 16px; margin-top: 16px;
+  }
+  .section {
+    background: #1e2230; border-radius: 10px; overflow: hidden;
+    border: 1px solid #2d3348;
+  }
+  .section-header {
+    padding: 12px 18px; font-weight: 700; font-size: 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .s1 .section-header { background: #1e3a5f; border-bottom: 2px solid #3b82f6; }
+  .s2 .section-header { background: #1a3a2a; border-bottom: 2px solid #10b981; }
+  .s3 .section-header { background: #2d1f4e; border-bottom: 2px solid #8b5cf6; }
+  .s4 .section-header { background: #3a2010; border-bottom: 2px solid #f59e0b; }
+  .s5 .section-header { background: #1a2a3a; border-bottom: 2px solid #06b6d4; }
+  .s6 .section-header { background: #2a1a3a; border-bottom: 2px solid #ec4899; }
+  .section-body { padding: 14px 18px; }
+  .grid { display: grid; gap: 10px; }
+  .grid-3 { grid-template-columns: repeat(3, 1fr); }
+  .grid-2 { grid-template-columns: repeat(2, 1fr); }
+  .grid-4 { grid-template-columns: repeat(4, 1fr); }
+  .card {
+    background: #252a3d; border-radius: 8px; padding: 12px;
+    border: 1px solid #3a4060;
+  }
+  .card.changed { border-color: #7c3aed; background: #1e1635; }
+  .card.new-card { border-color: #059669; background: #0d2018; }
+  .card.removed { border-color: #dc2626; background: #1f0e0e; opacity: 0.7; }
+  .card h4 { font-size: 12px; font-weight: 700; color: #93c5fd; margin-bottom: 6px; }
+  .card.changed h4 { color: #c4b5fd; }
+  .card.new-card h4 { color: #6ee7b7; }
+  .card.removed h4 { color: #fca5a5; text-decoration: line-through; }
+  .card ul { list-style: none; padding: 0; }
+  .card ul li { font-size: 11.5px; color: #cbd5e1; padding: 2px 0; }
+  .card ul li::before { content: "• "; color: #64748b; }
+  .card ul li.changed::before { content: "▶ "; color: #a78bfa; }
+  .card ul li.new-item::before { content: "✚ "; color: #34d399; }
+  .card ul li.removed-item { color: #f87171; text-decoration: line-through; opacity: 0.6; }
+  .card ul li.removed-item::before { content: "✕ "; color: #f87171; }
+  .tag {
+    display: inline-block; font-size: 10px;
+    padding: 1px 6px; border-radius: 3px; margin: 1px;
+  }
+  .tag-blue { background: #1d4ed8; color: #bfdbfe; }
+  .tag-green { background: #065f46; color: #a7f3d0; }
+  .tag-purple { background: #4c1d95; color: #ddd6fe; }
+  .tag-orange { background: #92400e; color: #fed7aa; }
+  .tag-red { background: #7f1d1d; color: #fecaca; }
+  .tag-gray { background: #374151; color: #9ca3af; }
+  .tag-teal { background: #134e4a; color: #99f6e4; }
+  .arrow {
+    text-align: center; font-size: 20px; color: #4b5563;
+    padding: 4px 0;
+  }
+  .divider { height: 1px; background: #2d3348; margin: 10px 0; }
+  .note {
+    background: #1c2030; border: 1px dashed #4b5563;
+    border-radius: 6px; padding: 8px 12px; margin-top: 8px;
+    font-size: 11.5px; color: #94a3b8;
+  }
+  .note strong { color: #fbbf24; }
+  .highlight-box {
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    border: 1px solid #3b82f6; border-radius: 8px;
+    padding: 12px 16px; margin-top: 10px;
+  }
+  .highlight-box h4 { color: #60a5fa; font-size: 12px; margin-bottom: 6px; }
+  .y-var-box {
+    background: #1a1a2e; border: 2px solid #f59e0b;
+    border-radius: 8px; padding: 10px 14px; margin-top: 8px;
+  }
+  .y-var-box h4 { color: #fbbf24; font-size: 12px; margin-bottom: 4px; }
+  .formula { font-family: monospace; font-size: 12px; color: #a5f3fc; background: #0f172a; padding: 4px 8px; border-radius: 4px; display: inline-block; margin-top: 2px; }
+  .track-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 10px; }
+  .track-box {
+    border-radius: 8px; padding: 12px;
+    border: 1px solid;
+  }
+  .track-a { border-color: #3b82f6; background: #0f1e38; }
+  .track-b { border-color: #10b981; background: #052e1c; }
+  .track-c { border-color: #f59e0b; background: #2a1800; }
+  .track-label { font-size: 10px; font-weight: 700; margin-bottom: 6px; }
+  .track-a .track-label { color: #60a5fa; }
+  .track-b .track-label { color: #34d399; }
+  .track-c .track-label { color: #fbbf24; }
+  .track-box h5 { font-size: 12px; font-weight: 700; color: #e2e8f0; margin-bottom: 6px; }
+  .stat-row { display: flex; gap: 16px; margin-top: 12px; justify-content: center; }
+  .stat-box {
+    text-align: center; background: #252a3d; border-radius: 8px;
+    padding: 12px 20px; border: 1px solid #3a4060;
+  }
+  .stat-box .num { font-size: 22px; font-weight: 800; color: #60a5fa; }
+  .stat-box .label { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; padding: 10px 18px; background: #161820; font-size: 11px; }
+  .legend-item { display: flex; align-items: center; gap: 5px; color: #94a3b8; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 2px; }
+  .full-width { grid-column: 1 / -1; }
+  table { width: 100%; border-collapse: collapse; font-size: 11.5px; margin-top: 6px; }
+  th { background: #1e2738; color: #93c5fd; padding: 6px 10px; text-align: left; border-bottom: 1px solid #3b82f6; }
+  td { padding: 5px 10px; border-bottom: 1px solid #2d3348; color: #cbd5e1; }
+  tr:hover td { background: #1e2230; }
+  .section-num {
+    width: 24px; height: 24px; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 800; flex-shrink: 0;
+  }
+  .n1 { background: #3b82f6; }
+  .n2 { background: #10b981; }
+  .n3 { background: #8b5cf6; }
+  .n4 { background: #f59e0b; }
+  .n5 { background: #06b6d4; }
+  .n6 { background: #ec4899; }
+</style>
+</head>
+<body>
+
+<h1 class="main-title">
+  머신러닝 강의 프로젝트 — 고령 취약계층 헬스케어 수요 예측
+  <span>공공데이터 기반 ML 파이프라인 | 트랙 A(회귀) · 트랙 B(분류) · 트랙 C(군집화) &nbsp;|&nbsp; <strong style="color:#f59e0b">수정본 v4</strong></span>
+</h1>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#7c3aed"></div> 변경됨</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#059669"></div> 신규 추가</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#dc2626"></div> 제거됨</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#3a4060"></div> 기존 유지</div>
+</div>
+
+<div class="pipeline">
+
+  <!-- 1. 데이터 수집 및 병합 -->
+  <div class="section s1">
+    <div class="section-header">
+      <span class="section-num n1">1</span>
+      데이터 수집 및 병합
+      <span class="change-badge">구성 변경</span>
+    </div>
+    <div class="section-body">
+      <div class="grid grid-3">
+
+        <div class="card">
+          <h4>📊 주민등록 인구통계</h4>
+          <ul>
+            <li>지역별(행정동) 성별·연령별 인구수</li>
+            <li><strong style="color:#34d399">5개 연도 파일 (2022~2026)</strong> → 패널 구성 후 <strong style="color:#fbbf24">2023 기준 횡단면</strong> 사용</li>
+            <li>65세이상인구 집계 (연령 컬럼 파싱)</li>
+            <li>인코딩: CP949</li>
+          </ul>
+        </div>
+
+        <div class="card changed">
+          <h4>🏠 독거노인 현황 <span class="change-badge">Y변수 원천 변경</span></h4>
+          <ul>
+            <li class="changed">201_DT_...csv → Wide→Long 변환 (2022~2025)</li>
+            <li class="new-item">독거노인_동별.csv → 2018년 기준값 추출 (Y변수 기준연도)</li>
+            <li>행정동명 정규화 처리 필수 (표기 불일치 존재)</li>
+          </ul>
+        </div>
+
+        <div class="card changed">
+          <h4>🏥 NHIS 진료내역 (2023) <span class="change-badge">활용 방식 변경</span></h4>
+          <ul>
+            <li class="removed-item">행정동별 요양일수 → Y변수</li>
+            <li class="changed">행정동 수준 데이터 없음 → 서울 전체 집계만 가능</li>
+            <li class="new-item">연령대별(14~18) 1인당 평균 요양일수 → <strong style="color:#a5f3fc">연령 가중치</strong>로만 활용</li>
+            <li>Chunk 단위 처리 (대용량 CSV)</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h4>🗺️ 건강_병원.csv (의료기관)</h4>
+          <ul>
+            <li>좌표정보(X/Y) 기반</li>
+            <li>EPSG:5174 → EPSG:4326 변환</li>
+            <li>서울 범위 필터 후 GeoJSON 공간조인</li>
+            <li>→ 행정동별 의료기관수 산출</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h4>🏬 서울시 노인의료복지시설현황.xlsx</h4>
+          <ul>
+            <li>자치구 단위 집계 (행정동 수준 없음)</li>
+            <li>병합 헤더 처리 (header=None 로드)</li>
+            <li>자치구 중복값 → 재집계 후 포화도 산출</li>
+            <li>→ 요양시설 포화도 피처</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h4>🗺️ HangJeongDong_ver20260201.geojson</h4>
+          <ul>
+            <li>행정안전부 10자리 행정동코드(adm_cd2)</li>
+            <li>서울만 필터 (sido == '11')</li>
+            <li>공간조인 + 지도 시각화용</li>
+          </ul>
+        </div>
+
+      </div>
+
+      <!-- Track B IMD 전용 데이터 소스 -->
+      <div style="margin-top:12px; background:#0d1a12; border-radius:8px; padding:12px 16px; border:1px solid #059669;">
+        <p style="font-size:12px; font-weight:700; color:#34d399; margin-bottom:8px;">🆕 Track B IMD 레이블 생성 전용 데이터 <span class="new-badge">v3 신규</span></p>
+        <div class="grid grid-4">
+          <div class="card new-card">
+            <h4>🏥 NHIS 장기요양기관 현황</h4>
+            <ul>
+              <li class="new-item">국민건강보험공단_장기요양기관 시설별 현황.xlsx</li>
+              <li class="new-item">서울 8,931개 기관 (전국 65,412개)</li>
+              <li class="new-item">시도·시군구·법정동코드 포함</li>
+              <li>→ <strong style="color:#a5f3fc">D2 요양시설접근성</strong> 원천</li>
+            </ul>
+          </div>
+          <div class="card new-card">
+            <h4>🗺️ 법정동-행정동 매핑</h4>
+            <ul>
+              <li class="new-item">code_hdong_bdong.json (WooilJeong/code)</li>
+              <li class="new-item">8자리 법정동코드 → 10자리 행정동코드</li>
+              <li class="new-item">D1↔D2 상관계수 -0.751 → <strong style="color:#34d399">-0.152</strong> 개선</li>
+              <li>행정동 단위 D2 산출 가능</li>
+            </ul>
+          </div>
+          <div class="card new-card">
+            <h4>📋 기초생활수급자 현황</h4>
+            <ul>
+              <li class="new-item">행정동별 수급자수 (2024년)</li>
+              <li class="new-item">65세이상인구 대비 수급률 산출</li>
+              <li>→ <strong style="color:#a5f3fc">D1 소득박탈</strong> 원천</li>
+            </ul>
+          </div>
+          <div class="card new-card">
+            <h4>🏃 지역사회건강조사</h4>
+            <ul>
+              <li class="new-item">자치구별 건강지표 (연간)</li>
+              <li class="new-item">음주율, 운동부족율, 만성질환율 등</li>
+              <li>→ <strong style="color:#a5f3fc">D3 복지기반 / D4 건강위험</strong> 원천</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="note">
+        <strong>⚠️ 데이터 정합성 이슈 (실제 해결 내용):</strong>
+        행정동명 표기 불일치 — <code>normalize_dong()</code> 함수로 통일 (제+숫자 제거, 정릉↔정능, 홍제동 표기) |
+        신사동 중복 (관악구·강남구) — 행정동코드 기준 하드코딩 처리 |
+        의료기관 좌표계 변환 필수 |
+        노인복지시설 자치구 중복 집계 후 포화도 재산출
+      </div>
+
+      <div class="y-var-box" style="margin-top:12px">
+        <h4>🎯 Y변수 확정 <span class="change-badge">기존 계획에서 변경</span></h4>
+        <table>
+          <tr>
+            <th style="width:40%">구분</th>
+            <th>기존 계획</th>
+            <th>변경 후</th>
+          </tr>
+          <tr>
+            <td>Y변수명</td>
+            <td style="color:#f87171">연도별 요양수요량 (요양일수)</td>
+            <td style="color:#34d399"><strong>요양수요가속도</strong></td>
+          </tr>
+          <tr>
+            <td>산출식</td>
+            <td style="color:#f87171">65세+인구 × 서울평균 스칼라</td>
+            <td style="color:#34d399"><span class="formula">ln(독거노인수_2023 / 독거노인수_2018) × 100</span></td>
+          </tr>
+          <tr>
+            <td>변경 이유</td>
+            <td colspan="2" style="color:#fbbf24">기존 방식은 R²≈1 자명(trivial) 문제 발생 — 설명변수와 Y가 거의 동일한 값이 됨</td>
+          </tr>
+          <tr>
+            <td>의미</td>
+            <td colspan="2">2018→2023년 5년간 독거노인 수 변화율 (로그수익률). 절댓값 아닌 <strong style="color:#a5f3fc">수요 증가 속도</strong>를 측정</td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="note" style="margin-top:8px">
+        <strong>📅 분석 기준 변경:</strong>
+        기존 계획(2018~2023 패널/시계열) → <strong style="color:#60a5fa">2023년 행정동 단위 횡단면 분석</strong> (약 425~430개 행정동) |
+        시간 의존성은 고령화율_변화(2022→2023)와 Y변수 로그수익률로 반영
+      </div>
+
+      <div class="note" style="margin-top:8px; border-color:#f59e0b;">
+        <strong>⚠️ Track B 행정동 불일치 (6개):</strong>
+        df_analysis <span style="color:#60a5fa">426개</span> vs df_criteria <span style="color:#34d399">420개</span> — 6개 행정동 IMD 레이블 미생성:
+        <span style="color:#fbbf24">개포3동(강남구), 강일동·상일제1동·상일제2동·둔촌제1동(강동구), 항동(구로구)</span>
+        → 행정구역 신설·개편으로 매핑 불가 | Track B 학습 시 해당 행정동 제외 또는 자치구 평균값 대체 처리 필요
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow">↓</div>
+
+  <!-- 2. 탐색적 데이터 분석 -->
+  <div class="section s2">
+    <div class="section-header">
+      <span class="section-num n2">2</span>
+      탐색적 데이터 분석 (EDA)
+    </div>
+    <div class="section-body">
+      <div class="grid grid-2">
+        <div class="card">
+          <h4>분포 및 이상치</h4>
+          <ul>
+            <li>고령화율 분포 (행정동별 히스토그램)</li>
+            <li>연도별 평균 고령화율 추이 (2022~2026)</li>
+            <li>총인구 vs 고령화율 산점도</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>상관관계 분석</h4>
+          <ul>
+            <li>피처 간 상관 히트맵 (Seaborn)</li>
+            <li>VIF 확인용 상관계수 0.8 이상 변수쌍 탐지</li>
+            <li>→ 고령화율_lag1 제거 근거 확인</li>
+          </ul>
+        </div>
+        <div class="card changed">
+          <h4>데이터 통합 검증 <span class="change-badge">신규</span></h4>
+          <ul>
+            <li class="new-item">행정동명 매칭률 확인 (주민등록 vs 독거노인)</li>
+            <li class="new-item">2026년 신규 생성 / 소멸 행정동 탐지</li>
+            <li class="new-item">df_base merge 후 결측치 현황 점검</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>지역별 시각화</h4>
+          <ul>
+            <li>서울 행정동별 고령화율 지도 (folium / geopandas)</li>
+            <li>공간 자기상관 (Moran's I) — GeoJSON 기반</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow">↓</div>
+
+  <!-- 3. 피처 엔지니어링 -->
+  <div class="section s3">
+    <div class="section-header">
+      <span class="section-num n3">3</span>
+      피처 엔지니어링
+      <span class="change-badge">구성 변경</span>
+    </div>
+    <div class="section-body">
+
+      <div class="grid grid-2" style="margin-bottom:10px">
+        <div>
+          <p style="font-size:11px; color:#94a3b8; margin-bottom:6px">공간 조인</p>
+          <div class="card">
+            <h4>🗺️ 3-A. 행정동별 의료기관수 산출</h4>
+            <ul>
+              <li>gdf_hosp(점) × gdf_seoul(폴리곤) → sjoin</li>
+              <li>predicate='within' → 행정동 내 의료기관수</li>
+              <li>NaN → 0 처리 (논의 필요 사항)</li>
+            </ul>
+          </div>
+        </div>
+        <div>
+          <p style="font-size:11px; color:#94a3b8; margin-bottom:6px">행정동명 정규화</p>
+          <div class="card changed">
+            <h4>🔧 3-B. normalize_dong() <span class="new-badge">신규</span></h4>
+            <ul>
+              <li class="new-item">'제+숫자' 패턴 제거 (창신제1동 → 창신1동)</li>
+              <li class="new-item">'정능' → '정릉' 표기 통일</li>
+              <li class="new-item">'홍제숫자' → '홍숫자' 패턴 보정</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <p style="font-size:11px; color:#94a3b8; margin-bottom:6px">핵심 파생 지표 (최종 X변수) <span class="change-badge">v4 업데이트</span></p>
+      <div class="grid grid-4">
+        <div class="card removed">
+          <h4>취약도지수 <span class="removed-badge">제거</span></h4>
+          <div class="formula" style="font-size:10px; opacity:0.5">고령화율 × 독거노인비율 / 100</div>
+          <ul style="margin-top:6px">
+            <li class="removed-item">파생 독거취약수요지수와 다중공선성 (r=0.988)</li>
+            <li class="removed-item">고령화율·독거노인비율 개별 유지로 대체</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>인프라갭</h4>
+          <div class="formula" style="font-size:10px">65세이상인구 / (의료기관수 + 1)</div>
+          <ul style="margin-top:6px"><li>VIF=1.54 ✅</li><li>노인 1명당 의료기관 부족 정도</li></ul>
+        </div>
+        <div class="card changed">
+          <h4>고령화율_변화 <span class="change-badge">유지</span></h4>
+          <div class="formula" style="font-size:10px">고령화율(2023) - 고령화율(2022)</div>
+          <ul style="margin-top:6px">
+            <li>VIF=1.73 ✅ | r(Y)=+0.24</li>
+            <li class="removed-item">기존: lag t-1, t-2 피처</li>
+          </ul>
+        </div>
+        <div class="card removed">
+          <h4>연령가중수요지수 <span class="removed-badge">제거</span></h4>
+          <div class="formula" style="font-size:10px; opacity:0.5">Σ(연령대별인구 × 요양일수가중치) / 65세이상인구</div>
+          <ul style="margin-top:6px">
+            <li class="removed-item">실제 데이터 std=0.016 → 거의 상수</li>
+            <li class="removed-item">비율_85세이상과 r=0.941 → VIF 폭발</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>독거노인비율</h4>
+          <div class="formula" style="font-size:10px">독거노인수 / 65세이상인구 × 100</div>
+          <ul style="margin-top:6px"><li>VIF=1.38 ✅ | r(Y)=+0.35</li></ul>
+        </div>
+        <div class="card">
+          <h4>포화도</h4>
+          <div class="formula" style="font-size:10px">요양시설 총현원 / 총정원</div>
+          <ul style="margin-top:6px"><li>VIF=1.65 ✅ | 자치구 단위 집계값</li></ul>
+        </div>
+        <div class="card changed">
+          <h4>연령대별 비율 <span class="change-badge">세분화</span></h4>
+          <ul>
+            <li class="removed-item">비율_65-69세, 비율_70대, 비율_80세이상</li>
+            <li class="changed">비율_75-79세 (VIF=1.32 ✅)</li>
+            <li class="changed">비율_85세이상 (VIF=1.16 ✅)</li>
+          </ul>
+        </div>
+        <div class="card new-card">
+          <h4>수요공급갭지수 <span class="new-badge">신규</span></h4>
+          <ul style="margin-top:6px">
+            <li class="new-item">수요 대비 공급 부족 수준 정량화</li>
+            <li class="new-item">VIF=2.33 ✅ | r(Y)=-0.19</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="note" style="margin-top:10px">
+        <strong>결측치 처리:</strong>
+        의료기관수 NaN → 0 (논의 필요) |
+        나머지 9개 피처 → <strong style="color:#a5f3fc">KNN Imputer (n_neighbors=5)</strong> |
+        요양수요가속도 결측 행 → dropna 처리 후 최종 분석 데이터 확정
+      </div>
+
+      <!-- VIF 스크리닝 파이프라인 -->
+      <div style="margin-top:10px; background:#0f1a2e; border-radius:8px; padding:12px 16px; border:1px solid #3b82f6;">
+        <p style="font-size:12px; font-weight:700; color:#60a5fa; margin-bottom:10px;">🔬 VIF 스크리닝 파이프라인 (노트북 내 실행 코드) <span class="new-badge">v4 신규</span></p>
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; font-size:11px; margin-bottom:10px;">
+          <div style="background:#1d4ed8; color:#bfdbfe; padding:4px 10px; border-radius:5px; font-weight:700;">Step 0<br>후보 변수 정의</div>
+          <span style="color:#4b5563; font-size:16px;">→</span>
+          <div style="background:#1d4ed8; color:#bfdbfe; padding:4px 10px; border-radius:5px; font-weight:700;">Step 1<br>R² 탐지</div>
+          <span style="color:#4b5563; font-size:16px;">→</span>
+          <div style="background:#1d4ed8; color:#bfdbfe; padding:4px 10px; border-radius:5px; font-weight:700;">Step 2<br>쌍대 상관</div>
+          <span style="color:#4b5563; font-size:16px;">→</span>
+          <div style="background:#1d4ed8; color:#bfdbfe; padding:4px 10px; border-radius:5px; font-weight:700;">Step 3<br>VIF 계산</div>
+          <span style="color:#4b5563; font-size:16px;">→</span>
+          <div style="background:#059669; color:#a7f3d0; padding:4px 10px; border-radius:5px; font-weight:700;">Step 4<br>feat_cols 확정</div>
+          <span style="color:#4b5563; font-size:16px;">→</span>
+          <div style="background:#059669; color:#a7f3d0; padding:4px 10px; border-radius:5px; font-weight:700;">Step 5<br>VIF 재검증</div>
+        </div>
+        <div class="grid grid-3" style="gap:8px; font-size:11px;">
+          <div style="background:#0a1628; border-radius:6px; padding:8px; border:1px solid #1d4ed8;">
+            <p style="color:#60a5fa; font-weight:700; margin-bottom:3px;">Step 1: R² 탐지</p>
+            <p style="color:#94a3b8;">각 변수를 나머지로 선형회귀 → R²&gt;0.95이면 선형조합 의심 → 독거취약수요지수·연령가중수요지수 탐지</p>
+          </div>
+          <div style="background:#0a1628; border-radius:6px; padding:8px; border:1px solid #1d4ed8;">
+            <p style="color:#60a5fa; font-weight:700; margin-bottom:3px;">Step 2: 쌍대 상관</p>
+            <p style="color:#94a3b8;">|r|&gt;0.9 ❌ / |r|&gt;0.7 ⚠️ 플래그 → 독거노인비율↔독거취약수요지수 r=0.988 탐지</p>
+          </div>
+          <div style="background:#0a1628; border-radius:6px; padding:8px; border:1px solid #1d4ed8;">
+            <p style="color:#60a5fa; font-weight:700; margin-bottom:3px;">Step 3: VIF (sklearn 기반)</p>
+            <p style="color:#94a3b8;">sklearn LinearRegression(intercept=True) → 1/(1-R²) — statsmodels 무절편 R²왜곡 버그 수정</p>
+          </div>
+        </div>
+        <div class="note" style="margin-top:8px">
+          <strong>노트북 파이프라인 구조:</strong>
+          df_base 구성 → <span style="color:#60a5fa">VIF 스크리닝 코드 (Step 0~5)</span> → feat_cols 확정 → KNN 결측치 처리 → df_analysis 구성 → <strong style="color:#34d399">df_analysis_v6.csv 저장</strong>
+          &nbsp;|&nbsp; v4 이전 중간 저장(v4.csv) 단계 제거
+        </div>
+      </div>
+
+      <div style="margin-top:10px; background:#1a1a2e; border-radius:8px; padding:10px 14px; border:1px solid #3a4060;">
+        <p style="font-size:11.5px; color:#94a3b8; margin-bottom:8px">
+          <strong style="color:#e2e8f0">최종 분석 데이터: df_analysis_v6.csv</strong>
+          <span class="change-badge">v4 업데이트</span>
+          &nbsp;<span style="font-size:10.5px; color:#64748b;">420행 × 18열 (ID 8열 + X 9열 + Y 1열)</span>
+        </p>
+        <table>
+          <tr>
+            <th>구분</th><th>변수</th><th>VIF</th><th>r(Y)</th><th>유형</th>
+          </tr>
+          <tr>
+            <td>Y (타겟)</td>
+            <td style="color:#fbbf24">요양수요가속도</td>
+            <td>—</td><td>—</td>
+            <td>연속형 (회귀) / 3분위 분류</td>
+          </tr>
+          <tr>
+            <td rowspan="9">X (피처 9개)</td>
+            <td>고령화율</td>
+            <td style="color:#34d399">1.95</td><td>-0.02</td>
+            <td>인구통계</td>
+          </tr>
+          <tr>
+            <td>고령화율_변화</td>
+            <td style="color:#34d399">1.73</td><td>+0.24</td>
+            <td>트렌드</td>
+          </tr>
+          <tr>
+            <td>독거노인비율</td>
+            <td style="color:#34d399">1.38</td><td>+0.35</td>
+            <td>인구통계</td>
+          </tr>
+          <tr>
+            <td>비율_75-79세</td>
+            <td style="color:#34d399">1.32</td><td>-0.29</td>
+            <td>연령구성</td>
+          </tr>
+          <tr>
+            <td>비율_85세이상</td>
+            <td style="color:#34d399">1.16</td><td>-0.21</td>
+            <td>연령구성</td>
+          </tr>
+          <tr>
+            <td>인프라갭</td>
+            <td style="color:#34d399">1.54</td><td>+0.01</td>
+            <td>인프라</td>
+          </tr>
+          <tr>
+            <td>포화도</td>
+            <td style="color:#34d399">1.65</td><td>-0.17</td>
+            <td>인프라</td>
+          </tr>
+          <tr>
+            <td>시설수</td>
+            <td style="color:#34d399">2.53</td><td>+0.16</td>
+            <td>인프라</td>
+          </tr>
+          <tr>
+            <td>수요공급갭지수</td>
+            <td style="color:#34d399">2.33</td><td>-0.19</td>
+            <td>공급부족</td>
+          </tr>
+        </table>
+        <div class="note" style="margin-top:8px">
+          <strong>⚠️ VIF 계산 주의:</strong> statsmodels.variance_inflation_factor는 무절편 R²로 계산 → VIF 과대추정 버그 발생.
+          본 프로젝트는 <strong style="color:#a5f3fc">sklearn LinearRegression(intercept=True)</strong> 기반으로 VIF 직접 산출 (모든 VIF &lt; 3 ✅)
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="arrow">↓</div>
+
+  <!-- 4. 모델링 -->
+  <div class="section s4">
+    <div class="section-header">
+      <span class="section-num n4">4</span>
+      모델링 — 강의 핵심 구현단
+      <span class="change-badge">Track D 제거</span>
+      <span class="change-badge">Track B 레이블 변경</span>
+    </div>
+    <div class="section-body">
+
+      <div class="track-row">
+        <div class="track-box track-a">
+          <div class="track-label">TRACK A — 수요량 예측 (회귀, Supervised)</div>
+          <h5>Y = 요양수요가속도</h5>
+          <div class="grid grid-2" style="margin-top:8px; gap:8px;">
+            <div style="background:#0a1a30; border-radius:6px; padding:8px; border:1px solid #1d4ed8;">
+              <p style="color:#60a5fa; font-size:11px; font-weight:700;">Random Forest</p>
+              <p style="font-size:11px; color:#94a3b8;">앙상블 기반 비선형 관계 포착. 피처 중요도 산출 → SHAP 연계</p>
+            </div>
+            <div style="background:#0a1a30; border-radius:6px; padding:8px; border:1px solid #1d4ed8;">
+              <p style="color:#60a5fa; font-size:11px; font-weight:700;">XGBoost</p>
+              <p style="font-size:11px; color:#94a3b8;">Gradient Boosting 기반. 예측 정밀도 최적화.</p>
+            </div>
+            <div style="background:#0a1a30; border-radius:6px; padding:8px; border:1px solid #1d4ed8;">
+              <p style="color:#60a5fa; font-size:11px; font-weight:700;">Ridge / Lasso</p>
+              <p style="font-size:11px; color:#94a3b8;">정규화 선형 회귀. 스케일링 필수. 피처 선택 효과(Lasso).</p>
+            </div>
+            <div style="background:#0a1a30; border-radius:6px; padding:8px; border:1px solid #1d4ed8;">
+              <p style="color:#60a5fa; font-size:11px; font-weight:700;">Decision Tree</p>
+              <p style="font-size:11px; color:#94a3b8;">해석성 확보. 가지치기(pruning) 개념 실습.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="track-box track-b">
+          <div class="track-label">TRACK B — 고위험 지역 분류 (분류, Supervised) <span class="change-badge">레이블 변경</span></div>
+          <h5>Y = <span style="color:#34d399;">IMD 3분위 위험등급</span> (고위험 / 중위험 / 저위험) <span class="new-badge">v3</span></h5>
+          <div style="font-size:10.5px; color:#94a3b8; margin:4px 0 8px 0; line-height:1.6;">
+            균형 클래스: 각 140개 행정동 (총 420개) &nbsp;|&nbsp; 원천: <span style="color:#a5f3fc">df_criteria.csv</span> (track2_criteria.ipynb)<br>
+            <span style="color:#f87171; text-decoration:line-through; opacity:0.6;">기존: 요양수요가속도 이진화 (High/Low)</span>
+          </div>
+          <div class="grid grid-2" style="margin-top:6px; gap:8px;">
+            <div style="background:#031a0e; border-radius:6px; padding:8px; border:1px solid #065f46;">
+              <p style="color:#34d399; font-size:11px; font-weight:700;">Logistic Regression</p>
+              <p style="font-size:11px; color:#94a3b8;">다항 소프트맥스. 클래스별 확률 출력. 계수 해석 용이.</p>
+            </div>
+            <div style="background:#031a0e; border-radius:6px; padding:8px; border:1px solid #065f46;">
+              <p style="color:#34d399; font-size:11px; font-weight:700;">SVM (RBF Kernel)</p>
+              <p style="font-size:11px; color:#94a3b8;">비선형 결정 경계. OvR 전략. C/gamma 하이퍼파라미터 튜닝.</p>
+            </div>
+            <div style="background:#031a0e; border-radius:6px; padding:8px; border:1px solid #065f46;">
+              <p style="color:#34d399; font-size:11px; font-weight:700;">Random Forest Classifier</p>
+              <p style="font-size:11px; color:#94a3b8;">3클래스 앙상블. 피처 중요도 산출 + Confusion Matrix.</p>
+            </div>
+            <div style="background:#031a0e; border-radius:6px; padding:8px; border:1px solid #065f46;">
+              <p style="color:#34d399; font-size:11px; font-weight:700;">XGBoost Classifier</p>
+              <p style="font-size:11px; color:#94a3b8;">다중 클래스 Gradient Boosting. 과적합 방지 (early stopping).</p>
+            </div>
+          </div>
+          <div style="margin-top:8px; background:#031a0e; border-radius:6px; padding:8px; border:1px solid #065f46;">
+            <p style="color:#34d399; font-size:11px; font-weight:700;">평가: Macro F1 / Precision / Recall / ROC-AUC (OvR) / 3×3 Confusion Matrix</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- IMD 파이프라인 박스 -->
+      <div style="margin-top:10px; background:#031a0e; border:1px solid #34d399; border-radius:8px; padding:12px 16px;">
+        <p style="font-size:12px; font-weight:700; color:#34d399; margin-bottom:8px;">📐 Track B 레이블 생성 파이프라인 — IMD (Index of Multiple Deprivation) <span class="new-badge">v3 신규</span></p>
+        <div class="grid grid-4" style="gap:8px; margin-bottom:10px;">
+          <div style="background:#0a1a0a; border-radius:6px; padding:8px; border:1px solid #065f46; text-align:center;">
+            <p style="color:#6ee7b7; font-size:10.5px; font-weight:700; margin-bottom:3px;">D1 소득박탈 (30%)</p>
+            <p style="font-size:10px; color:#94a3b8;">기초생활수급자수<br>/ 65세이상인구</p>
+            <p style="font-size:10px; color:#64748b; margin-top:3px;">행정동 기준</p>
+          </div>
+          <div style="background:#0a1a0a; border-radius:6px; padding:8px; border:1px solid #065f46; text-align:center;">
+            <p style="color:#6ee7b7; font-size:10.5px; font-weight:700; margin-bottom:3px;">D2 요양시설접근성 (25%)</p>
+            <p style="font-size:10px; color:#94a3b8;">NHIS 장기요양기관수<br>/ 65세이상인구 × 1000</p>
+            <p style="font-size:10px; color:#64748b; margin-top:3px;">법정동→행정동 매핑 적용</p>
+          </div>
+          <div style="background:#0a1a0a; border-radius:6px; padding:8px; border:1px solid #065f46; text-align:center;">
+            <p style="color:#6ee7b7; font-size:10.5px; font-weight:700; margin-bottom:3px;">D3 복지기반 (25%)</p>
+            <p style="font-size:10px; color:#94a3b8;">지역사회건강조사<br>복지 취약 지표</p>
+            <p style="font-size:10px; color:#64748b; margin-top:3px;">자치구 → 행정동 배분</p>
+          </div>
+          <div style="background:#0a1a0a; border-radius:6px; padding:8px; border:1px solid #065f46; text-align:center;">
+            <p style="color:#6ee7b7; font-size:10.5px; font-weight:700; margin-bottom:3px;">D4 건강위험 (20%)</p>
+            <p style="font-size:10px; color:#94a3b8;">지역사회건강조사<br>건강행태 지표</p>
+            <p style="font-size:10px; color:#64748b; margin-top:3px;">자치구 → 행정동 배분</p>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:6px; font-size:11px; flex-wrap:wrap;">
+          <span style="background:#065f46; color:#a7f3d0; padding:2px 8px; border-radius:4px;">Z-score 표준화</span>
+          <span style="color:#4b5563; font-size:14px;">→</span>
+          <span style="background:#065f46; color:#a7f3d0; padding:2px 8px; border-radius:4px;">exp 변환 (방향통일)</span>
+          <span style="color:#4b5563; font-size:14px;">→</span>
+          <span style="background:#065f46; color:#a7f3d0; padding:2px 8px; border-radius:4px;">가중합 IMD 점수</span>
+          <span style="color:#4b5563; font-size:14px;">→</span>
+          <span style="background:#065f46; color:#a7f3d0; padding:2px 8px; border-radius:4px;">3분위 분류</span>
+          <span style="color:#4b5563; font-size:14px;">→</span>
+          <span style="background:#059669; color:white; padding:2px 10px; border-radius:4px; font-weight:700;">df_criteria.csv (420개 행정동)</span>
+        </div>
+        <div style="margin-top:6px; font-size:11px; color:#64748b;">
+          도메인 간 상관계수 최대 <strong style="color:#34d399">0.238</strong> (독립성 확인 ✓) &nbsp;|&nbsp; 위험등급: 고위험·중위험·저위험 각 140개 (균형 클래스) &nbsp;|&nbsp; 구현: <span style="color:#a5f3fc">track2_criteria.ipynb</span>
+        </div>
+      </div>
+
+      <div style="margin-top:10px; display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+        <div class="track-box track-c" style="border-color:#f59e0b">
+          <div class="track-label" style="color:#fbbf24">TRACK C — 지역 군집화 (클러스터링, Unsupervised)</div>
+          <h5>피처: 취약도지수, 인프라갭, 포화도, 고령화율</h5>
+          <div class="grid grid-2" style="margin-top:8px; gap:8px;">
+            <div style="background:#1a0e00; border-radius:6px; padding:8px; border:1px solid #92400e;">
+              <p style="color:#fbbf24; font-size:11px; font-weight:700;">K-Means Clustering</p>
+              <p style="font-size:11px; color:#94a3b8;">Elbow Curve로 K 결정. 행정동 클러스터 지도화. Silhouette 평가.</p>
+            </div>
+            <div style="background:#1a0e00; border-radius:6px; padding:8px; border:1px solid #92400e;">
+              <p style="color:#fbbf24; font-size:11px; font-weight:700;">DBSCAN</p>
+              <p style="font-size:11px; color:#94a3b8;">밀도 기반. 이상 지역(outlier) 탐지. K-Means와 결과 비교.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="card removed">
+          <h4>TRACK D — 시계열 예측 <span class="removed-badge">제거</span></h4>
+          <ul>
+            <li class="removed-item">Prophet (Facebook) — 5년 수요 예측</li>
+            <li class="removed-item">ARIMA / SARIMA — 고전 시계열 분석</li>
+          </ul>
+          <div class="note" style="margin-top:8px; border-color:#dc2626">
+            <strong style="color:#f87171">제거 이유:</strong>
+            행정동 단위 다년도 Y 시계열 데이터 없음. 단일 시점(2023) 횡단면 분석으로 전환.
+            시간 의존성은 <span style="color:#fbbf24">Y=로그수익률</span>과 <span style="color:#fbbf24">고령화율_변화</span> 피처로 대체 반영.
+          </div>
+        </div>
+      </div>
+
+      <div class="note" style="margin-top:10px">
+        <strong>교차검증:</strong>
+        회귀모델 — StratifiedKFold (5-fold) |
+        분류모델 — StratifiedKFold (5-fold) |
+        과적합 여부: Train vs Val Loss 비교 |
+        <strong>하이퍼파라미터 튜닝:</strong> GridSearchCV / RandomizedSearchCV — 최종 파라미터 기록 및 보고서 포함
+      </div>
+
+    </div>
+  </div>
+
+  <div class="arrow">↓</div>
+
+  <!-- 5. 모델 평가 및 비교 -->
+  <div class="section s5">
+    <div class="section-header">
+      <span class="section-num n5">5</span>
+      모델 평가 및 비교
+    </div>
+    <div class="section-body">
+      <div class="grid grid-3">
+        <div class="card">
+          <h4>회귀 지표</h4>
+          <ul>
+            <li>RMSE — 예측 오차 크기</li>
+            <li>MAE — 절대 오차</li>
+            <li>R² — 설명력</li>
+            <li>MAPE — 퍼센트 오차</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>분류 지표</h4>
+          <ul>
+            <li>Accuracy / F1-score</li>
+            <li>Precision / Recall</li>
+            <li>ROC-AUC</li>
+            <li>Confusion Matrix</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>클러스터링 평가</h4>
+          <ul>
+            <li>Silhouette Score</li>
+            <li>Davies-Bouldin 지수</li>
+            <li>Elbow Curve</li>
+            <li>클러스터 특성 프로파일링</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>교차검증 전략</h4>
+          <ul>
+            <li class="removed-item">시계열: TimeSeriesSplit (5-fold)</li>
+            <li>일반 모델: StratifiedKFold (5-fold)</li>
+            <li>과적합 여부: Train vs Val Loss 비교</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>하이퍼파라미터 튜닝</h4>
+          <ul>
+            <li>GridSearchCV / RandomizedSearchCV</li>
+            <li>최적 파라미터 기록 및 보고서 포함</li>
+          </ul>
+        </div>
+        <div class="card new-card">
+          <h4>모델 간 비교표 <span class="new-badge">강조</span></h4>
+          <ul>
+            <li class="new-item">트랙별 RMSE/F1/AUC 한눈에 비교</li>
+            <li class="new-item">최종 추천 모델 선정 근거 제시</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow">↓</div>
+
+  <!-- 6. 결과 해석 및 비즈니스 산출물 -->
+  <div class="section s6">
+    <div class="section-header">
+      <span class="section-num n6">6</span>
+      결과 해석 및 비즈니스 산출물
+    </div>
+    <div class="section-body">
+      <div class="grid grid-2">
+        <div class="card">
+          <h4>피처 중요도 분석</h4>
+          <ul>
+            <li>Random Forest SHAP — 행정동별 어떤 변수가 요양수요 가속에 기여했는지 설명</li>
+            <li>취약도지수·연령가중수요지수의 중요도 비교</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>고위험 행정동 지도 시각화</h4>
+          <ul>
+            <li>Choropleth — 요양수요가속도를 색상으로 표현</li>
+            <li>클러스터링 결과 → 지도 위에 군집 색으로 표시</li>
+          </ul>
+        </div>
+        <div class="card changed">
+          <h4>수요 증가 속도 보고서 <span class="change-badge">내용 변경</span></h4>
+          <ul>
+            <li class="removed-item">기존: 5년 수요 예측 리포트 (Prophet)</li>
+            <li class="changed">변경: 2018→2023 요양수요 가속도 상위 10개 행정동</li>
+            <li class="new-item">가속도 상위 지역 공통 특성 분석</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>모델 성능 비교표</h4>
+          <ul>
+            <li>트랙별 RMSE/F1/AUC를 한눈에 비교</li>
+            <li>최종 추천 모델 선정 근거 제시</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- 하단 통계 -->
+<div class="stat-row" style="margin-top:20px; flex-wrap:wrap;">
+  <div class="stat-box">
+    <div class="num">4+</div>
+    <div class="label">사용 ML 알고리즘<br>트랙 A~C</div>
+  </div>
+  <div class="stat-box">
+    <div class="num">5-fold</div>
+    <div class="label">교차검증<br>StratifiedKFold 기반</div>
+  </div>
+  <div class="stat-box">
+    <div class="num">SHAP</div>
+    <div class="label">고령취약도<br>피처 중요도 시각화</div>
+  </div>
+  <div class="stat-box" style="border-color:#7c3aed">
+    <div class="num" style="color:#c4b5fd; font-size:16px;">2023<br>횡단면</div>
+    <div class="label">단일 시점 분석<br>(시계열 Track D 제거)</div>
+  </div>
+  <div class="stat-box" style="border-color:#059669">
+    <div class="num" style="color:#34d399; font-size:16px;">로그<br>수익률</div>
+    <div class="label">Y변수 = 요양수요가속도<br>2018→2023 변화율</div>
+  </div>
+  <div class="stat-box" style="border-color:#10b981">
+    <div class="num" style="color:#34d399; font-size:16px;">IMD<br>3분위</div>
+    <div class="label">Track B 레이블<br>고위험·중위험·저위험 각 140개</div>
+  </div>
+  <div class="stat-box" style="border-color:#10b981">
+    <div class="num" style="color:#34d399;">420</div>
+    <div class="label">df_criteria.csv<br>행정동 (IMD 분류 완료)</div>
+  </div>
+  <div class="stat-box" style="border-color:#8b5cf6">
+    <div class="num" style="color:#c4b5fd;">9</div>
+    <div class="label">최종 X변수 (v6)<br>전체 VIF &lt; 3 ✅</div>
+  </div>
+  <div class="stat-box" style="border-color:#f59e0b">
+    <div class="num" style="color:#fbbf24; font-size:14px;">VIF<br>sklearn</div>
+    <div class="label">statsmodels 버그 수정<br>무절편 R²왜곡 해결</div>
+  </div>
+</div>
+
+<!-- 기술 스택 -->
+<div style="margin-top:12px; background:#161820; border-radius:8px; padding:10px 16px; font-size:11px; color:#64748b; line-height:1.8;">
+  <strong style="color:#475569">기술 스택:</strong>
+  Python 3.10+ &nbsp;|&nbsp; pandas / numpy (데이터) &nbsp;|&nbsp; scikit-learn (ML 전반 + VIF 산출) &nbsp;|&nbsp; xgboost / lightgbm (부스팅) &nbsp;|&nbsp; shap (해석) &nbsp;|&nbsp; geopandas / folium (공간 시각화) &nbsp;|&nbsp; matplotlib / seaborn (EDA) &nbsp;|&nbsp; openpyxl (Excel) &nbsp;|&nbsp; scipy (Z-score·IMD 산출) &nbsp;|&nbsp; json (법정동-행정동 매핑) &nbsp;|&nbsp; Jupyter Notebook / Google Colab
+  &nbsp;|&nbsp; <strong style="color:#7c3aed">VIF 산출: sklearn LinearRegression (statsmodels 무절편 R²왜곡 버그 수정)</strong>
+</div>
+
+</body>
+</html>
