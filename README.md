@@ -6,6 +6,42 @@
 
 ---
 
+## 프로젝트 설정
+
+### 요구사항
+
+- Python 3.10+
+- Jupyter Notebook 또는 JupyterLab
+
+### 설치
+
+```bash
+# 저장소 클론
+git clone <repository-url>
+cd HUFS_BA
+
+# 의존성 설치
+pip install -r requirements.txt
+```
+
+### 실행 순서
+
+```bash
+# JupyterLab 실행
+jupyter lab
+```
+
+| 순서 | 노트북 | 설명 |
+|------|--------|------|
+| 1 | `TrackA_Regression.ipynb` | 요양수요가속도 회귀 예측 |
+| 2 | `TrackB_Classification.ipynb` | IMD 위험등급 분류 |
+| 3 | `TrackC_Clustering.ipynb` | 지역 특성별 군집화 |
+
+> **데이터 파일**: `data/` 디렉토리에 아래 파일이 있어야 합니다.
+> `df_analysis.csv`, `df_criteria.csv`, `HangJeongDong_ver20260201.geojson`
+
+---
+
 ## 프로젝트 개요
 
 서울시 425~430개 행정동을 분석 단위로, 2018→2023년 독거노인 수 변화율(요양수요가속도)을 예측·분류·군집화하는 ML 파이프라인을 구축합니다.
@@ -44,7 +80,7 @@ Track B 레이블: IMD(Index of Multiple Deprivation) 기반 **고위험·중위
 
 ---
 
-## 최종 피처 (X 변수 9개 — df_analysis_v6.csv)
+## 최종 피처 (X 변수 9개 — df_analysis.csv)
 
 | 변수 | VIF | r(Y) | 유형 |
 |------|-----|------|------|

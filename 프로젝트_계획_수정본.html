@@ -422,13 +422,13 @@
         <div class="card">
           <h4>인프라갭</h4>
           <div class="formula" style="font-size:10px">65세이상인구 / (의료기관수 + 1)</div>
-          <ul style="margin-top:6px"><li>VIF=1.54 ✅</li><li>노인 1명당 의료기관 부족 정도</li></ul>
+          <ul style="margin-top:6px"><li>VIF=1.55 ✅</li><li>노인 1명당 의료기관 부족 정도</li></ul>
         </div>
         <div class="card changed">
           <h4>고령화율_변화 <span class="change-badge">유지</span></h4>
           <div class="formula" style="font-size:10px">고령화율(2023) - 고령화율(2022)</div>
           <ul style="margin-top:6px">
-            <li>VIF=1.73 ✅ | r(Y)=+0.24</li>
+            <li>VIF=1.36 ✅ | r(Y)=+0.24</li>
             <li class="removed-item">기존: lag t-1, t-2 피처</li>
           </ul>
         </div>
@@ -443,26 +443,27 @@
         <div class="card">
           <h4>독거노인비율</h4>
           <div class="formula" style="font-size:10px">독거노인수 / 65세이상인구 × 100</div>
-          <ul style="margin-top:6px"><li>VIF=1.38 ✅ | r(Y)=+0.35</li></ul>
+          <ul style="margin-top:6px"><li>VIF=1.47 ✅ | r(Y)=+0.35</li></ul>
         </div>
         <div class="card">
           <h4>포화도</h4>
           <div class="formula" style="font-size:10px">요양시설 총현원 / 총정원</div>
-          <ul style="margin-top:6px"><li>VIF=1.65 ✅ | 자치구 단위 집계값</li></ul>
+          <ul style="margin-top:6px"><li>VIF=1.70 ✅ | 자치구 단위 집계값</li></ul>
         </div>
         <div class="card changed">
           <h4>연령대별 비율 <span class="change-badge">세분화</span></h4>
           <ul>
-            <li class="removed-item">비율_65-69세, 비율_70대, 비율_80세이상</li>
-            <li class="changed">비율_75-79세 (VIF=1.32 ✅)</li>
-            <li class="changed">비율_85세이상 (VIF=1.16 ✅)</li>
+            <li class="removed-item">비율_65-69세, 비율_70대</li>
+            <li class="changed">비율_75-79세 (VIF=2.15 ✅)</li>
+            <li class="new-item">비율_80-84세 (VIF=2.74 ✅, r(Y)=-0.33) <span class="new-badge">신규</span></li>
+            <li class="changed">비율_85세이상 (VIF=1.89 ✅)</li>
           </ul>
         </div>
         <div class="card new-card">
           <h4>수요공급갭지수 <span class="new-badge">신규</span></h4>
           <ul style="margin-top:6px">
             <li class="new-item">수요 대비 공급 부족 수준 정량화</li>
-            <li class="new-item">VIF=2.33 ✅ | r(Y)=-0.19</li>
+            <li class="new-item">VIF=2.34 ✅ | r(Y)=-0.19</li>
           </ul>
         </div>
       </div>
@@ -470,7 +471,7 @@
       <div class="note" style="margin-top:10px">
         <strong>결측치 처리:</strong>
         의료기관수 NaN → 0 (논의 필요) |
-        나머지 9개 피처 → <strong style="color:#a5f3fc">KNN Imputer (n_neighbors=5)</strong> |
+        나머지 10개 피처 → <strong style="color:#a5f3fc">KNN Imputer (n_neighbors=5)</strong> |
         요양수요가속도 결측 행 → dropna 처리 후 최종 분석 데이터 확정
       </div>
 
@@ -506,16 +507,16 @@
         </div>
         <div class="note" style="margin-top:8px">
           <strong>노트북 파이프라인 구조:</strong>
-          df_base 구성 → <span style="color:#60a5fa">VIF 스크리닝 코드 (Step 0~5)</span> → feat_cols 확정 → KNN 결측치 처리 → df_analysis 구성 → <strong style="color:#34d399">df_analysis_v6.csv 저장</strong>
+          df_base 구성 → <span style="color:#60a5fa">VIF 스크리닝 코드 (Step 0~5)</span> → feat_cols 확정 → KNN 결측치 처리 → df_analysis 구성 → <strong style="color:#34d399">df_analysis.csv 저장</strong>
           &nbsp;|&nbsp; v4 이전 중간 저장(v4.csv) 단계 제거
         </div>
       </div>
 
       <div style="margin-top:10px; background:#1a1a2e; border-radius:8px; padding:10px 14px; border:1px solid #3a4060;">
         <p style="font-size:11.5px; color:#94a3b8; margin-bottom:8px">
-          <strong style="color:#e2e8f0">최종 분석 데이터: df_analysis_v6.csv</strong>
+          <strong style="color:#e2e8f0">최종 분석 데이터: df_analysis.csv</strong>
           <span class="change-badge">v4 업데이트</span>
-          &nbsp;<span style="font-size:10.5px; color:#64748b;">420행 × 18열 (ID 8열 + X 9열 + Y 1열)</span>
+          &nbsp;<span style="font-size:10.5px; color:#64748b;">420행 × 19열 (ID 8열 + X 10열 + Y 1열)</span>
         </p>
         <table>
           <tr>
@@ -528,49 +529,54 @@
             <td>연속형 (회귀) / 3분위 분류</td>
           </tr>
           <tr>
-            <td rowspan="9">X (피처 9개)</td>
+            <td rowspan="10">X (피처 10개)</td>
             <td>고령화율</td>
-            <td style="color:#34d399">1.95</td><td>-0.02</td>
+            <td style="color:#34d399">1.58</td><td>-0.02</td>
             <td>인구통계</td>
           </tr>
           <tr>
             <td>고령화율_변화</td>
-            <td style="color:#34d399">1.73</td><td>+0.24</td>
+            <td style="color:#34d399">1.36</td><td>+0.24</td>
             <td>트렌드</td>
           </tr>
           <tr>
             <td>독거노인비율</td>
-            <td style="color:#34d399">1.38</td><td>+0.35</td>
+            <td style="color:#34d399">1.47</td><td>+0.35</td>
             <td>인구통계</td>
           </tr>
           <tr>
             <td>비율_75-79세</td>
-            <td style="color:#34d399">1.32</td><td>-0.29</td>
+            <td style="color:#34d399">2.15</td><td>-0.29</td>
+            <td>연령구성</td>
+          </tr>
+          <tr>
+            <td style="color:#34d399">비율_80-84세 ★신규</td>
+            <td style="color:#34d399">2.74</td><td>-0.33</td>
             <td>연령구성</td>
           </tr>
           <tr>
             <td>비율_85세이상</td>
-            <td style="color:#34d399">1.16</td><td>-0.21</td>
+            <td style="color:#34d399">1.89</td><td>-0.21</td>
             <td>연령구성</td>
           </tr>
           <tr>
             <td>인프라갭</td>
-            <td style="color:#34d399">1.54</td><td>+0.01</td>
+            <td style="color:#34d399">1.55</td><td>+0.01</td>
             <td>인프라</td>
           </tr>
           <tr>
             <td>포화도</td>
-            <td style="color:#34d399">1.65</td><td>-0.17</td>
+            <td style="color:#34d399">1.70</td><td>-0.17</td>
             <td>인프라</td>
           </tr>
           <tr>
             <td>시설수</td>
-            <td style="color:#34d399">2.53</td><td>+0.16</td>
+            <td style="color:#34d399">2.55</td><td>+0.16</td>
             <td>인프라</td>
           </tr>
           <tr>
             <td>수요공급갭지수</td>
-            <td style="color:#34d399">2.33</td><td>-0.19</td>
+            <td style="color:#34d399">2.34</td><td>-0.19</td>
             <td>공급부족</td>
           </tr>
         </table>
@@ -694,16 +700,30 @@
       <div style="margin-top:10px; display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
         <div class="track-box track-c" style="border-color:#f59e0b">
           <div class="track-label" style="color:#fbbf24">TRACK C — 지역 군집화 (클러스터링, Unsupervised)</div>
-          <h5>피처: 취약도지수, 인프라갭, 포화도, 고령화율</h5>
+          <h5>피처: 10개 (고령화율·독거노인비율·인프라갭·포화도·수요공급갭지수·요양수요가속도 외) <span class="change-badge">피처 변경</span></h5>
+          <div style="font-size:10.5px; color:#94a3b8; margin:4px 0 8px 0; line-height:1.6;">
+            제외: 총인구수·65세이상인구·독거노인수_2018·시설수 (절대값 원시지표) &nbsp;|&nbsp; 전처리: StandardScaler
+          </div>
           <div class="grid grid-2" style="margin-top:8px; gap:8px;">
             <div style="background:#1a0e00; border-radius:6px; padding:8px; border:1px solid #92400e;">
-              <p style="color:#fbbf24; font-size:11px; font-weight:700;">K-Means Clustering</p>
-              <p style="font-size:11px; color:#94a3b8;">Elbow Curve로 K 결정. 행정동 클러스터 지도화. Silhouette 평가.</p>
+              <p style="color:#fbbf24; font-size:11px; font-weight:700;">K-Means Clustering <span class="new-badge">K=5 확정</span></p>
+              <p style="font-size:11px; color:#94a3b8;">실루엣 기준 최적 K=5 자동 선정. Elbow·Silhouette·Davies-Bouldin 종합. 행정동 클러스터 Folium 지도화.</p>
             </div>
-            <div style="background:#1a0e00; border-radius:6px; padding:8px; border:1px solid #92400e;">
-              <p style="color:#fbbf24; font-size:11px; font-weight:700;">DBSCAN</p>
-              <p style="font-size:11px; color:#94a3b8;">밀도 기반. 이상 지역(outlier) 탐지. K-Means와 결과 비교.</p>
+            <div style="background:#1a0e00; border-radius:6px; padding:8px; border:1px solid #92400e; opacity:0.55;">
+              <p style="color:#fca5a5; font-size:11px; font-weight:700; text-decoration:line-through;">DBSCAN <span class="removed-badge">미구현</span></p>
+              <p style="font-size:11px; color:#94a3b8;">K-Means로 충분한 해석력 확보 → 생략</p>
             </div>
+          </div>
+          <div style="margin-top:8px; background:#1a0e00; border-radius:6px; padding:8px; border:1px solid #92400e;">
+            <p style="color:#fbbf24; font-size:11px; font-weight:700;">실제 군집 결과 (K=5, 실루엣=0.154)</p>
+            <table style="font-size:10.5px; margin-top:4px;">
+              <tr><th>클러스터</th><th>이름</th><th>n</th><th>요양수요가속도 평균</th></tr>
+              <tr><td>C0</td><td>초고령·인프라포화</td><td>76</td><td>18.98</td></tr>
+              <tr><td>C2</td><td>고령화안정·인프라충족</td><td>103</td><td>22.35</td></tr>
+              <tr><td>C1</td><td>고령화가속·인프라갭</td><td>115</td><td>28.10</td></tr>
+              <tr><td>C3</td><td>저고령·수요태동</td><td>100</td><td>40.00</td></tr>
+              <tr><td>C4</td><td>고령독거·수요폭증</td><td>26</td><td>65.67</td></tr>
+            </table>
           </div>
         </div>
 
@@ -792,6 +812,45 @@
           </ul>
         </div>
       </div>
+
+      <!-- 실제 모델 성능 결과 -->
+      <div style="margin-top:12px; background:#0d1a12; border-radius:8px; padding:12px 16px; border:1px solid #059669;">
+        <p style="font-size:12px; font-weight:700; color:#34d399; margin-bottom:10px;">✅ 실제 모델 성능 결과 (GridSearchCV 튜닝 후 Holdout Test Set 평가)</p>
+
+        <p style="font-size:11px; font-weight:700; color:#60a5fa; margin:6px 0 4px;">Track A — 회귀 (Y: 요양수요가속도, 8:2 분할, KFold-5)</p>
+        <table>
+          <tr><th>모델</th><th>Test RMSE</th><th>Test R²</th><th>Test MAE</th><th>과적합 갭</th><th>채택</th></tr>
+          <tr><td style="color:#fbbf24">XGBoost</td><td style="color:#34d399">14.27</td><td style="color:#34d399">0.598</td><td style="color:#34d399">10.06</td><td>+11.74</td><td>⭐ 최적</td></tr>
+          <tr><td>RandomForest</td><td>16.18</td><td>0.484</td><td>11.19</td><td>+7.71</td><td></td></tr>
+          <tr><td>Lasso</td><td>16.97</td><td>0.432</td><td>12.24</td><td>+0.70</td><td></td></tr>
+          <tr><td>Ridge</td><td>17.06</td><td>0.426</td><td>12.28</td><td>+0.79</td><td></td></tr>
+          <tr><td>DecisionTree</td><td>17.65</td><td>0.385</td><td>13.03</td><td>+3.25</td><td></td></tr>
+        </table>
+        <div class="note" style="margin-top:6px; font-size:10.5px;">
+          <strong>최적 하이퍼파라미터 (XGBoost):</strong> max_depth=3, n_estimators=300, learning_rate=0.1, subsample=0.8, colsample_bytree=1.0, reg_alpha=0.1
+        </div>
+
+        <p style="font-size:11px; font-weight:700; color:#34d399; margin:10px 0 4px;">Track B — 분류 (Y: IMD 3분위 위험등급, 8:2 분할, StratifiedKFold-5)</p>
+        <table>
+          <tr><th>모델</th><th>Test Macro F1</th><th>Test Accuracy</th><th>Test ROC-AUC</th><th>과적합 F1 갭</th><th>채택</th></tr>
+          <tr><td style="color:#fbbf24">XGBoost</td><td style="color:#34d399">0.750</td><td style="color:#34d399">0.750</td><td style="color:#34d399">0.875</td><td>+0.241</td><td>⭐ 최적</td></tr>
+          <tr><td>SVM (RBF)</td><td>0.657</td><td>0.655</td><td>0.836</td><td>+0.265</td><td></td></tr>
+          <tr><td>RandomForest</td><td>0.653</td><td>0.655</td><td>0.827</td><td>+0.242</td><td></td></tr>
+          <tr><td>LogisticRegression</td><td>0.533</td><td>0.536</td><td>0.745</td><td>+0.104</td><td></td></tr>
+        </table>
+        <div class="note" style="margin-top:6px; font-size:10.5px;">
+          <strong>최적 하이퍼파라미터 (XGBoost):</strong> max_depth=3, n_estimators=200, learning_rate=0.05, subsample=1.0, colsample_bytree=0.8, reg_alpha=0.1, reg_lambda=2.0
+          &nbsp;|&nbsp; <strong>Track B:</strong> 클래스 균형(각 140개) → SMOTE 불필요, RobustScaler 권장
+        </div>
+
+        <p style="font-size:11px; font-weight:700; color:#fbbf24; margin:10px 0 4px;">Track C — 군집화 (K-Means, K=5, StandardScaler)</p>
+        <table>
+          <tr><th>지표</th><th>값</th><th>해석</th></tr>
+          <tr><td>실루엣 점수</td><td>0.154</td><td>군집 간 적당한 분리 (소규모 데이터 특성)</td></tr>
+          <tr><td>Davies-Bouldin</td><td>1.693</td><td>낮을수록 좋음 — 중간 수준</td></tr>
+          <tr><td>최적 K</td><td>5</td><td>실루엣 곡선 최대값 기준 자동 선정</td></tr>
+        </table>
+      </div>
     </div>
   </div>
 
@@ -871,12 +930,24 @@
     <div class="label">df_criteria.csv<br>행정동 (IMD 분류 완료)</div>
   </div>
   <div class="stat-box" style="border-color:#8b5cf6">
-    <div class="num" style="color:#c4b5fd;">9</div>
-    <div class="label">최종 X변수 (v6)<br>전체 VIF &lt; 3 ✅</div>
+    <div class="num" style="color:#c4b5fd;">10</div>
+    <div class="label">최종 X변수<br>전체 VIF &lt; 3 ✅</div>
   </div>
   <div class="stat-box" style="border-color:#f59e0b">
     <div class="num" style="color:#fbbf24; font-size:14px;">VIF<br>sklearn</div>
     <div class="label">statsmodels 버그 수정<br>무절편 R²왜곡 해결</div>
+  </div>
+  <div class="stat-box" style="border-color:#f59e0b">
+    <div class="num" style="color:#fbbf24;">5</div>
+    <div class="label">Track C 최적 K<br>실루엣 기준 자동 선정</div>
+  </div>
+  <div class="stat-box" style="border-color:#3b82f6">
+    <div class="num" style="color:#60a5fa; font-size:14px;">R²<br>0.598</div>
+    <div class="label">Track A 최적 XGBoost<br>Test RMSE=14.27</div>
+  </div>
+  <div class="stat-box" style="border-color:#10b981">
+    <div class="num" style="color:#34d399; font-size:14px;">F1<br>0.750</div>
+    <div class="label">Track B 최적 XGBoost<br>Test AUC=0.875</div>
   </div>
 </div>
 
