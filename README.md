@@ -4,7 +4,7 @@
 
 > 머신러닝 강의 프로젝트 — 수정본 v4
 
-📋 **[프로젝트 계획서 (수정본 v4)](프로젝트_계획_수정본.html)**
+📋 **[프로젝트 계획서 (수정본 v4)](https://htmlpreview.github.io/?https://raw.githubusercontent.com/Hufssiyoung/elderly_healthcare_Income_analysis/main/%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8_%EA%B3%84%ED%9A%8D_%EC%88%98%EC%A0%95%EB%B3%B8.html)**
 
 ---
 
