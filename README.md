@@ -96,7 +96,7 @@ Track B 레이블: IMD(Index of Multiple Deprivation) 기반 **고위험·중위
 | 시설수 | 2.53 | +0.16 | 인프라 |
 | 수요공급갭지수 | 2.33 | -0.19 | 공급부족 |
 
-> **VIF 계산**: statsmodels의 무절편 R² 왜곡 버그를 피해 `sklearn LinearRegression(intercept=True)` 기반으로 직접 산출 — 전체 VIF < 3 ✅
+> **VIF 계산**: statsmodels의 무절편 R² 왜곡 버그를 피해 `sklearn LinearRegression(intercept=True)` 기반으로 직접 산출
 
 ---
 
@@ -121,7 +121,7 @@ Track B 레이블: IMD(Index of Multiple Deprivation) 기반 **고위험·중위
 
 5. 모델 평가 및 비교
    ├── 회귀: RMSE / MAE / R² / MAPE
-   ├── 분류: Macro F1 / Precision / Recall / ROC-AUC / Confusion Matrix
+   ├── 분류: Macro F1 / Precision / Recall / Confusion Matrix
    └── 군집화: Silhouette Score / Davies-Bouldin / Elbow Curve
 
 6. 결과 해석
