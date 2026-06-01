@@ -24,3 +24,4 @@ shapely
 # 개발 환경
 jupyterlab
 streamlit
+streamlit-folium

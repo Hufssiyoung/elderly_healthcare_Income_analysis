@@ -20,6 +20,8 @@ def setup_font():
     fonts = [
         "/System/Library/Fonts/AppleSDGothicNeo.ttc",
         "/System/Library/Fonts/Supplemental/AppleGothic.ttf",
+        "/usr/share/fonts/truetype/nanum/NanumGothic.ttf",
+        "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
     ]
     for fp in fonts:
         if os.path.exists(fp):
