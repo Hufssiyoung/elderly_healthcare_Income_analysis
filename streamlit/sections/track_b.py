@@ -3,6 +3,10 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import os as _os
+import joblib as _jl
+
+_PKL_B = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "precomputed", "track_b.pkl")
 from sklearn.model_selection import (
     StratifiedKFold, cross_validate, learning_curve, train_test_split, GridSearchCV
 )
@@ -31,7 +35,7 @@ def build_pipe(model, scale=True):
 
 TUNED_MODELS = {
     "LogisticRegression": build_pipe(
-        LogisticRegression(C=1.0, penalty="l2", max_iter=2000, random_state=RANDOM_STATE), scale=True),
+        LogisticRegression(C=1.0, l1_ratio=0, max_iter=2000, random_state=RANDOM_STATE), scale=True),
     "SVM_RBF": build_pipe(
         SVC(kernel="rbf", C=50, gamma="scale", probability=True, random_state=RANDOM_STATE), scale=True),
     "RandomForest": build_pipe(
@@ -55,6 +59,8 @@ def _decode_xgb(preds_int):
 
 @st.cache_resource
 def prepare_track_b():
+    if _os.path.exists(_PKL_B):
+        return _jl.load(_PKL_B)
     from sklearn.base import clone
     df = load_merged()
     X = df[FEAT_COLS].copy()
@@ -188,7 +194,7 @@ def show():
                 "과적합 F1 갭": round(res["train_F1"].mean() - res["test_F1"].mean(), 4),
             })
         st.dataframe(pd.DataFrame(rows).set_index("모델").style.background_gradient(
-            subset=["과적합 F1 갭"], cmap="RdYlGn_r"), use_container_width=True)
+            subset=["과적합 F1 갭"], cmap="RdYlGn_r"), width='stretch')
 
         fig, axes = plt.subplots(1, 3, figsize=(17, 5))
         for ax, (col, title) in zip(axes, [
@@ -234,7 +240,7 @@ def show():
                     scores.append(res["test_score"].mean())
                 return scores
 
-            lr_scores = lr_c_search(d["X_tr"], d["y_tr"])
+            lr_scores = d.get("lr_c_scores") or lr_c_search(d["X_tr"], d["y_tr"])
             fig, ax = plt.subplots(figsize=(6, 3.5))
             ax.semilogx(c_range, lr_scores, "o-", color="steelblue", lw=2)
             best_c = c_range[np.argmax(lr_scores)]
@@ -266,7 +272,10 @@ def show():
                         grid[i, j] = r["test_score"].mean()
                 return grid, c_vals, [str(g) for g in g_vals]
 
-            grid, c_vals, g_labels = svm_grid_search(d["X_tr"], d["y_tr"])
+            if "svm_grid" in d:
+                grid, c_vals, g_labels = d["svm_grid"]
+            else:
+                grid, c_vals, g_labels = svm_grid_search(d["X_tr"], d["y_tr"])
             fig, ax = plt.subplots(figsize=(6, 3.5))
             sns.heatmap(grid, annot=True, fmt=".3f", cmap="RdYlGn",
                         xticklabels=g_labels, yticklabels=c_vals, ax=ax, linewidths=0.5)
@@ -348,7 +357,7 @@ def show():
                 results[name] = (ts, tr_sc, va_sc)
             return results
 
-        lc = compute_lc_b(d["X_tr"], d["y_tr"], d["y_tr_enc"])
+        lc = d.get("lc_b") or compute_lc_b(d["X_tr"], d["y_tr"], d["y_tr_enc"])
         fig, axes = plt.subplots(1, 4, figsize=(22, 4.5))
         for ax, name in zip(axes, MODEL_NAMES):
             ts, tr_sc, va_sc = lc[name]
@@ -392,8 +401,11 @@ def show():
                 sv = explainer.shap_values(X_te_t)
             return sv, X_te_t
 
-        sv, X_te_t = compute_shap_b(
-            d["trained"][d["best_name"]], d["X_te"], d["X_tr"], FEAT_COLS, d["best_name"])
+        if "shap_b" in d:
+            sv, X_te_t = d["shap_b"]
+        else:
+            sv, X_te_t = compute_shap_b(
+                d["trained"][d["best_name"]], d["X_te"], d["X_tr"], FEAT_COLS, d["best_name"])
 
         cls_colors = ["steelblue", "goldenrod", "tomato"]
 

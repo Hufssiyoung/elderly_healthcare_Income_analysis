@@ -3,6 +3,10 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import os as _os
+import joblib as _jl
+
+_PKL_A = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "precomputed", "track_a.pkl")
 from sklearn.model_selection import (
     KFold, StratifiedKFold, cross_validate, learning_curve, train_test_split
 )
@@ -54,6 +58,8 @@ MODEL_NAMES = list(BEST_MODELS.keys())
 
 @st.cache_resource
 def prepare_track_a():
+    if _os.path.exists(_PKL_A):
+        return _jl.load(_PKL_A)
     df = load_main()
     X = df[FEAT_COLS].copy()
     y = df[TARGET].copy()
@@ -74,7 +80,6 @@ def prepare_track_a():
                                greater_is_better=True)
     scoring = {"RMSE": rmse_scorer, "R2": "r2"}
 
-    cv_kf, cv_skf = {}, {}
     default_models = {
         "Ridge": build_pipe(Ridge(alpha=1.0), scale=True),
         "Lasso": build_pipe(Lasso(alpha=0.1, max_iter=10000), scale=True),
@@ -82,6 +87,25 @@ def prepare_track_a():
         "RandomForest": build_pipe(RandomForestRegressor(n_estimators=100, random_state=RANDOM_STATE, n_jobs=-1), scale=False),
         "XGBoost": build_pipe(XGBRegressor(n_estimators=100, random_state=RANDOM_STATE, verbosity=0, n_jobs=-1), scale=False),
     }
+
+    # Single holdout (default params) — 과적합 확인용
+    single_val = []
+    for name, pipe in default_models.items():
+        m = clone(pipe)
+        m.fit(X_tr, y_tr)
+        p_tr_s = m.predict(X_tr)
+        p_te_s = m.predict(X_te)
+        single_val.append({
+            "모델": name,
+            "Train_RMSE": rmse(y_tr, p_tr_s),
+            "Test_RMSE":  rmse(y_te, p_te_s),
+            "Train_R²":   r2_score(y_tr, p_tr_s),
+            "Test_R²":    r2_score(y_te, p_te_s),
+            "Overfit_Gap": rmse(y_te, p_te_s) - rmse(y_tr, p_tr_s),
+        })
+    df_single = pd.DataFrame(single_val)
+
+    cv_kf, cv_skf = {}, {}
     for name, pipe in default_models.items():
         cv_kf[name] = cross_validate(pipe, X_tr, y_tr, cv=kf, scoring=scoring,
                                      return_train_score=True, n_jobs=-1)
@@ -124,6 +148,7 @@ def prepare_track_a():
 
     return {
         "X_tr": X_tr, "X_te": X_te, "y_tr": y_tr, "y_te": y_te,
+        "df_single": df_single,
         "cv_kf": cv_kf, "cv_skf": cv_skf,
         "tuned": tuned, "df_test": df_test,
         "best_name": best_name, "best_model": best_model,
@@ -139,9 +164,68 @@ def show():
     with st.spinner("모델 학습 중... (최초 1회만 실행)"):
         d = prepare_track_a()
 
-    tab1, tab2, tab3, tab4, tab5 = st.tabs(
-        ["🔁 교차검증", "📉 과적합 진단", "📐 학습곡선", "🔬 잔차분석", "🧠 SHAP"]
+    tab0, tab1, tab2, tab3, tab4, tab5 = st.tabs(
+        ["📌 단일 검증", "🔁 교차검증", "📉 과적합 진단", "📐 학습곡선", "🔬 잔차분석", "🧠 SHAP"]
     )
+
+    # ── Tab 0: 단일 검증 ───────────────────────────────────────────────────
+    with tab0:
+        st.subheader("단일 검증 (Hold-out) — 기본 하이퍼파라미터")
+        st.markdown(
+            "교차검증 도입 이전, **단순 Train/Test 분할(80/20)** 로만 평가한 결과입니다. "
+            "기본(default) 하이퍼파라미터를 사용했으며, 트리 계열 모델에서 심각한 과적합이 관찰됩니다."
+        )
+
+        df_s = d["df_single"]
+        DEFAULT_MODEL_NAMES = df_s["모델"].tolist()
+
+        # 수치 테이블
+        st.dataframe(
+            df_s.set_index("모델").style.format("{:.3f}").background_gradient(
+                subset=["Overfit_Gap"], cmap="RdYlGn_r"
+            ),
+            width='stretch',
+        )
+
+        fig, axes = plt.subplots(1, 3, figsize=(17, 5))
+        x = np.arange(len(DEFAULT_MODEL_NAMES))
+        w = 0.38
+
+        # RMSE 비교
+        axes[0].bar(x - w/2, df_s["Train_RMSE"], w, label="Train", color="steelblue", alpha=0.85, edgecolor="white")
+        axes[0].bar(x + w/2, df_s["Test_RMSE"],  w, label="Test",  color="tomato",    alpha=0.85, edgecolor="white")
+        axes[0].set_xticks(x); axes[0].set_xticklabels(DEFAULT_MODEL_NAMES, rotation=20, ha="right")
+        axes[0].set_title("RMSE 비교 (Train vs Test)", fontsize=11, fontweight="bold")
+        axes[0].legend(fontsize=9)
+
+        # R² 비교
+        axes[1].bar(x - w/2, df_s["Train_R²"], w, label="Train", color="steelblue", alpha=0.85, edgecolor="white")
+        axes[1].bar(x + w/2, df_s["Test_R²"],  w, label="Test",  color="tomato",    alpha=0.85, edgecolor="white")
+        axes[1].set_xticks(x); axes[1].set_xticklabels(DEFAULT_MODEL_NAMES, rotation=20, ha="right")
+        axes[1].axhline(0, color="orange", lw=1, ls="--")
+        axes[1].set_title("R² 비교 (Train vs Test)", fontsize=11, fontweight="bold")
+        axes[1].legend(fontsize=9)
+
+        # Overfit Gap
+        gap_colors = ["tomato" if v > 3 else "seagreen" for v in df_s["Overfit_Gap"]]
+        axes[2].bar(DEFAULT_MODEL_NAMES, df_s["Overfit_Gap"], color=gap_colors, alpha=0.85, edgecolor="white")
+        axes[2].axhline(0, color="gray", lw=1, ls="--")
+        for i, v in enumerate(df_s["Overfit_Gap"]):
+            axes[2].text(i, v + 0.05, f"{v:+.2f}", ha="center", fontsize=9)
+        axes[2].set_xticklabels(DEFAULT_MODEL_NAMES, rotation=20, ha="right")
+        axes[2].set_title("Overfit Gap (Test − Train RMSE)", fontsize=11, fontweight="bold")
+
+        plt.suptitle("단일 검증 결과 — 기본 하이퍼파라미터 (Hold-out 80/20)", fontsize=13, fontweight="bold", y=1.02)
+        plt.tight_layout()
+        st.pyplot(fig)
+        plt.close(fig)
+
+        st.warning(
+            "DecisionTree는 Train RMSE ≈ 0에 가까운 완전 과적합, "
+            "RandomForest·XGBoost도 Train/Test 격차가 큽니다. "
+            "단일 분할은 분할 방식에 따라 결과가 크게 달라지므로 "
+            "**교차검증(Cross-Validation)** 으로 전환하여 안정적인 성능을 측정했습니다."
+        )
 
     # ── Tab 1: CV 비교 ─────────────────────────────────────────────────────
     with tab1:
@@ -156,7 +240,7 @@ def show():
             rows.append({"모델": name,
                          "KFold Val RMSE": round(kf_rmse, 3), "KFold Val R²": round(kf_r2, 3),
                          "StratKFold Val RMSE": round(sk_rmse, 3), "StratKFold Val R²": round(sk_r2, 3)})
-        st.dataframe(pd.DataFrame(rows).set_index("모델"), use_container_width=True)
+        st.dataframe(pd.DataFrame(rows).set_index("모델"), width='stretch')
 
         fig, axes = plt.subplots(1, 2, figsize=(14, 5))
         x = np.arange(len(MODEL_NAMES))
@@ -191,7 +275,7 @@ def show():
             df_test[["모델", "Train_RMSE", "Test_RMSE", "Train_R2", "Test_R2", "Test_MAE", "Overfit_Gap"]]
             .set_index("모델").style.format("{:.3f}").background_gradient(
                 subset=["Overfit_Gap"], cmap="RdYlGn_r"),
-            use_container_width=True,
+            width='stretch',
         )
 
         fig, axes = plt.subplots(1, 3, figsize=(17, 5))
@@ -250,7 +334,7 @@ def show():
                 results[name] = (ts, -tr_sc, -va_sc)
             return results
 
-        lc_results = compute_learning_curves(d["X_tr"], d["y_tr"])
+        lc_results = d.get("learning_curves") or compute_learning_curves(d["X_tr"], d["y_tr"])
 
         fig, axes = plt.subplots(1, 5, figsize=(22, 4.5), sharey=False)
         for ax, name in zip(axes, MODEL_NAMES):
@@ -342,8 +426,11 @@ def show():
                 sv = explainer.shap_values(X_te_t)
             return sv, X_te_t
 
-        shap_vals, X_te_t = compute_shap(
-            d["best_model"], d["X_te"], d["X_tr"], FEAT_COLS)
+        if "shap_a" in d:
+            shap_vals, X_te_t = d["shap_a"]
+        else:
+            shap_vals, X_te_t = compute_shap(
+                d["best_model"], d["X_te"], d["X_tr"], FEAT_COLS)
 
         import shap as shap_lib
         mean_abs = np.abs(shap_vals).mean(axis=0)
@@ -370,4 +457,4 @@ def show():
         plt.close(fig)
 
         st.dataframe(shap_df.sort_values("Mean |SHAP|", ascending=False).reset_index(drop=True),
-                     use_container_width=True)
+                     width='stretch')

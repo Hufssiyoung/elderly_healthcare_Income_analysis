@@ -3,6 +3,10 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import os as _os
+import joblib as _jl
+
+_PKL_C = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "precomputed", "track_c.pkl")
 import json, os
 from scipy.stats import gaussian_kde
 from sklearn.preprocessing import StandardScaler
@@ -27,6 +31,8 @@ PALETTE = ["blue", "green", "yellow", "orange", "red"]
 
 @st.cache_resource
 def prepare_track_c():
+    if _os.path.exists(_PKL_C):
+        return _jl.load(_PKL_C)
     df = load_main()
     X_raw = df[FEAT_COLS].copy()
     scaler = StandardScaler()
@@ -442,4 +448,4 @@ def show():
         y_stats = df.groupby("cluster_km")["요양수요가속도"].agg(
             ["mean", "std", "min", "max", "count"]).round(2)
         y_stats.index = [f"C{i}: {CLUSTER_NAMES[i]}" for i in y_stats.index]
-        st.dataframe(y_stats, use_container_width=True)
+        st.dataframe(y_stats, width='stretch')

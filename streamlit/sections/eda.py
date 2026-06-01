@@ -53,7 +53,7 @@ def show():
 
         st.divider()
         st.subheader("기술 통계량")
-        st.dataframe(df[FEAT_COLS + [TARGET]].describe().round(3), use_container_width=True)
+        st.dataframe(df[FEAT_COLS + [TARGET]].describe().round(3), width='stretch')
 
     # ── Tab 2: 이상치 분석 ─────────────────────────────────────────────────
     with tab2:
@@ -90,7 +90,7 @@ def show():
                 "하한": round(lo, 2), "상한": round(hi, 2),
                 "이상치수": n_out, "이상치율(%)": round(n_out / len(df) * 100, 1),
             })
-        st.dataframe(pd.DataFrame(outlier_rows).set_index("변수"), use_container_width=True)
+        st.dataframe(pd.DataFrame(outlier_rows).set_index("변수"), width='stretch')
 
     # ── Tab 3: X↔Y 산점도 ─────────────────────────────────────────────────
     with tab3:
@@ -107,7 +107,7 @@ def show():
             )
             st.dataframe(
                 corr_y.rename("r값").to_frame().style.format("{:.3f}"),
-                use_container_width=True,
+                width='stretch',
             )
         with col_right:
             x_vals = df[selected]
