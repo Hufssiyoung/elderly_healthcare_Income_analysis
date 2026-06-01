@@ -6,3 +6,4 @@ __pycache__/
 data/국민건강보험공단_진료내역정보_2023.CSV
 프로젝트_계획_수정본.pdf
 build_criteria_v2.py
+*.docx
