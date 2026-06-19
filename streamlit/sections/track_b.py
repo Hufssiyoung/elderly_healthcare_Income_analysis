@@ -11,13 +11,13 @@ from sklearn.model_selection import (
     StratifiedKFold, cross_validate, learning_curve, train_test_split, GridSearchCV
 )
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler, label_binarize
+from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import (
     f1_score, accuracy_score, roc_auc_score, confusion_matrix,
-    roc_curve, auc, classification_report, make_scorer, precision_score, recall_score
+    classification_report, make_scorer, precision_score, recall_score
 )
 from xgboost import XGBClassifier
 from .utils import setup_font, load_merged, FEAT_COLS, CLASS_ORDER
@@ -136,9 +136,9 @@ def show():
     with st.spinner("모델 학습 중... (최초 1회만 실행)"):
         d = prepare_track_b()
 
-    tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
         "📦 피처 탐색", "🔁 교차검증", "⚙️ 하이퍼파라미터",
-        "📊 혼동행렬", "📈 ROC 곡선", "📐 학습곡선", "🧠 SHAP"
+        "📊 혼동행렬", "📐 학습곡선", "🧠 SHAP"
     ])
 
     df_all = load_merged()
@@ -313,32 +313,8 @@ def show():
                                        target_names=CLASS_ORDER, digits=4)
         st.code(report)
 
-    # ── Tab 5: ROC 곡선 ────────────────────────────────────────────────────
+    # ── Tab 5: 학습 곡선 ───────────────────────────────────────────────────
     with tab5:
-        st.subheader("ROC 곡선 — One-vs-Rest (4개 모델)")
-        y_bin = label_binarize(d["y_te"], classes=CLASS_ORDER)
-        cls_colors = ["steelblue", "goldenrod", "tomato"]
-
-        fig, axes = plt.subplots(2, 2, figsize=(12, 10))
-        for ax, name in zip(axes.flatten(), MODEL_NAMES):
-            prob = d["test_probs"][name]
-            for i, (cls, color) in enumerate(zip(CLASS_ORDER, cls_colors)):
-                fpr, tpr, _ = roc_curve(y_bin[:, i], prob[:, i])
-                roc_auc = auc(fpr, tpr)
-                ax.plot(fpr, tpr, color=color, lw=2, label=f"{cls} (AUC={roc_auc:.3f})")
-            ax.plot([0, 1], [0, 1], "k--", lw=1)
-            macro_auc = d["df_test"][d["df_test"]["모델"] == name]["Test_AUC"].values[0]
-            ax.set_title(f"{name}\nMacro AUC={macro_auc:.3f}", fontsize=11, fontweight="bold")
-            ax.set_xlabel("FPR")
-            ax.set_ylabel("TPR")
-            ax.legend(fontsize=9)
-        plt.suptitle("ROC 곡선 — One-vs-Rest", fontsize=13, fontweight="bold", y=1.01)
-        plt.tight_layout()
-        st.pyplot(fig)
-        plt.close(fig)
-
-    # ── Tab 6: 학습 곡선 ───────────────────────────────────────────────────
-    with tab6:
         st.subheader("학습 곡선 (4개 모델)")
         st.info("최초 실행 시 약 20초 소요됩니다.")
 
@@ -377,8 +353,8 @@ def show():
         st.pyplot(fig)
         plt.close(fig)
 
-    # ── Tab 7: SHAP ────────────────────────────────────────────────────────
-    with tab7:
+    # ── Tab 6: SHAP ────────────────────────────────────────────────────────
+    with tab6:
         st.subheader(f"SHAP 피처 중요도 — {d['best_name']}")
 
         @st.cache_resource

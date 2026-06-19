@@ -6,6 +6,8 @@
 
 📋 **[프로젝트 계획서 (수정본 v4)](https://htmlpreview.github.io/?https://raw.githubusercontent.com/Hufssiyoung/elderly_healthcare_Income_analysis/main/%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8_%EA%B3%84%ED%9A%8D_%EC%88%98%EC%A0%95%EB%B3%B8.html)**
 
+🚀 **[Streamlit 대시보드 바로가기](https://businessprogramming2.streamlit.app)**
+
 ---
 
 ## 프로젝트 설정
@@ -33,11 +35,16 @@ pip install -r requirements.txt
 jupyter lab
 ```
 
+노트북은 파일명 앞의 번호(`00`~`05`) 순서대로 실행해야 합니다. 앞 단계의 출력물이 다음 단계의 입력으로 사용됩니다.
+
 | 순서 | 노트북 | 설명 |
 |------|--------|------|
-| 1 | `TrackA_Regression.ipynb` | 요양수요가속도 회귀 예측 |
-| 2 | `TrackB_Classification.ipynb` | IMD 위험등급 분류 |
-| 3 | `TrackC_Clustering.ipynb` | 지역 특성별 군집화 |
+| 0 | `00.Data_ETL&Feature_Engineering.ipynb` | 데이터 수집·병합·피처 엔지니어링 (df_analysis.csv 생성) |
+| 1 | `01.EDA.ipynb` | 탐색적 데이터 분석 및 지도 시각화 |
+| 2 | `02.TrackA_Regression.ipynb` | 요양수요가속도 회귀 예측 |
+| 3 | `03.TrackB_criteria.ipynb` | IMD 위험등급 레이블 생성 (df_criteria.csv 생성) |
+| 4 | `04.TrackB_Classification.ipynb` | IMD 위험등급 분류 |
+| 5 | `05.TrackC_Clustering.ipynb` | 지역 특성별 군집화 |
 
 > **데이터 파일**: `data/` 디렉토리에 아래 파일이 있어야 합니다.
 > `df_analysis.csv`, `df_criteria.csv`, `HangJeongDong_ver20260201.geojson`

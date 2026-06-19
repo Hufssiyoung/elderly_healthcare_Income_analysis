@@ -32,7 +32,11 @@ PALETTE = ["blue", "green", "yellow", "orange", "red"]
 @st.cache_resource
 def prepare_track_c():
     if _os.path.exists(_PKL_C):
-        return _jl.load(_PKL_C)
+        d = _jl.load(_PKL_C)
+        # 코드(CLUSTER_NAMES)가 캐시 생성 이후 변경되었을 수 있으므로,
+        # pkl에 저장된 cluster_label을 현재 CLUSTER_NAMES 기준으로 재매핑해 불일치를 방지한다.
+        d["df"]["cluster_label"] = d["df"]["cluster_km"].map(CLUSTER_NAMES)
+        return d
     df = load_main()
     X_raw = df[FEAT_COLS].copy()
     scaler = StandardScaler()
@@ -169,7 +173,7 @@ def build_choropleth_map(df):
     df_choro = df[["행정동코드_str", "요양수요가속도"]].copy()
     df_choro.columns = ["code", "y_val"]
 
-    folium.Choropleth(
+    choropleth = folium.Choropleth(
         geo_data=geojson_seoul,
         data=df_choro,
         columns=["code", "y_val"],
@@ -181,6 +185,11 @@ def build_choropleth_map(df):
         legend_name="요양수요가속도 [ln(독거노인_2023/2018)×100]",
         bins=7,
     ).add_to(m)
+
+    # 기본 컬러바 범례가 다크 테마에서 잘 보이지 않아 제거 (색상 의미는 지도 상단 설명으로 안내)
+    for key in list(choropleth._children):
+        if key.startswith("color_map"):
+            del choropleth._children[key]
 
     folium.GeoJson(
         geojson_seoul,
@@ -215,14 +224,16 @@ def show():
 
     with map_col1:
         st.subheader("K-Means 클러스터 지도")
-        for i, cid in enumerate(sorted_clusters):
-            color = PALETTE[i % len(PALETTE)]
-            st.markdown(
-                f"<span style='background:{color};padding:2px 8px;border-radius:4px;"
-                f"color:white;font-size:12px;margin:2px;display:inline-block;'>"
-                f"C{cid}: {CLUSTER_NAMES[cid]} ({cluster_sizes.get(cid,0)}개)</span>",
-                unsafe_allow_html=True,
-            )
+        chips = "".join(
+            f"<span style='background:{PALETTE[i % len(PALETTE)]};padding:2px 8px;"
+            f"border-radius:4px;color:white;font-size:12px;display:inline-block;'>"
+            f"C{cid}: {CLUSTER_NAMES[cid]} ({cluster_sizes.get(cid,0)}개)</span>"
+            for i, cid in enumerate(sorted_clusters)
+        )
+        st.markdown(
+            f"<div style='display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;'>{chips}</div>",
+            unsafe_allow_html=True,
+        )
         with st.spinner("지도 로딩 중..."):
             m_km = build_kmeans_map(df.copy(), sorted_clusters)
             st_folium(m_km, width=680, height=480, returned_objects=[])
